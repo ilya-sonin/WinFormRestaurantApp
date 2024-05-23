@@ -63,6 +63,31 @@ public class DataAccess
                     Console.WriteLine("Таблица Users уже существует.");
                 }
             }
+
+            // Проверяем, существует ли таблица "Dishes"
+            using (var command = connection.CreateCommand())
+            {
+                command.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='Dishes'";
+                var tableExists = (long)command.ExecuteScalar() > 0;
+
+                if (!tableExists)
+                {
+                    // Создаем таблицу "Dishes"
+                    command.CommandText = @"
+                        CREATE TABLE Dishes (
+                            Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            Name TEXT NOT NULL,
+                            Price REAL NOT NULL,
+                            Description TEXT
+                        )";
+                    command.ExecuteNonQuery();
+                    Console.WriteLine("Таблица Dishes создана.");
+                }
+                else
+                {
+                    Console.WriteLine("Таблица Dishes уже существует.");
+                }
+            }
         }
     }
 
@@ -136,5 +161,119 @@ public class DataAccess
 
             return hashedPassword == user.Password;
         }
+    }
+
+    public bool AddDish(string name, decimal price, string description)
+    {
+        if (GetDishByName(name) != null)
+            return false;
+
+        using (var connection = new SqliteConnection($"Data Source={_databasePath}"))
+        {
+            connection.Open();
+
+            using (var command = connection.CreateCommand())
+            {
+                command.CommandText = "INSERT INTO Dishes (Name, Price, Description) VALUES (@Name, @Price, @Description)";
+                command.Parameters.AddWithValue("@Name", name);
+                command.Parameters.AddWithValue("@Price", price);
+                command.Parameters.AddWithValue("@Description", description);
+                var rowsAffected = command.ExecuteNonQuery();
+
+                return rowsAffected > 0;
+            }
+        }
+    }
+
+    public List<Dish> GetAllDishes()
+    {
+        var dishes = new List<Dish>();
+
+        using (var connection = new SqliteConnection($"Data Source={_databasePath}"))
+        {
+            connection.Open();
+
+            using (var command = connection.CreateCommand())
+            {
+                command.CommandText = "SELECT * FROM Dishes";
+
+                using (var reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        var dish = new Dish
+                        {
+                            Id = reader.GetInt32(0),
+                            Name = reader.GetString(1),
+                            Price = reader.GetDecimal(2),
+                            Description = reader.GetString(3)
+                        };
+                        dishes.Add(dish);
+                    }
+                }
+            }
+        }
+
+        return dishes;
+    }
+
+    public Dish GetDishById(int id)
+    {
+        using (var connection = new SqliteConnection($"Data Source={_databasePath}"))
+        {
+            connection.Open();
+
+            using (var command = connection.CreateCommand())
+            {
+                command.CommandText = "SELECT * FROM Dishes WHERE Id = @Id";
+                command.Parameters.AddWithValue("@Id", id);
+
+                using (var reader = command.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        return new Dish
+                        {
+                            Id = reader.GetInt32(0),
+                            Name = reader.GetString(1),
+                            Price = reader.GetDecimal(2),
+                            Description = reader.GetString(3)
+                        };
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private Dish GetDishByName(string name)
+    {
+        using (var connection = new SqliteConnection($"Data Source={_databasePath}"))
+        {
+            connection.Open();
+
+            using (var command = connection.CreateCommand())
+            {
+                command.CommandText = "SELECT * FROM Dishes WHERE Name = @Name";
+                command.Parameters.AddWithValue("@Name", name);
+
+                using (var reader = command.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        return new Dish
+                        {
+                            Id = reader.GetInt32(0),
+                            Name = reader.GetString(1),
+                            Price = reader.GetDecimal(2),
+                            Description = reader.GetString(3)
+                        };
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 }
