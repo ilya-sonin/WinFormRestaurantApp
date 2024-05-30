@@ -116,6 +116,7 @@
             button1.TabIndex = 7;
             button1.Text = "Оплатить";
             button1.UseVisualStyleBackColor = true;
+            button1.Click += button1_Click;
             // 
             // Checkout
             // 

@@ -35,5 +35,13 @@ namespace CursovaySonin2024
             var totalPrice = dishes.Sum(d => d.Price);
             totalPriceLabel.Text = $"Итого: {totalPrice:C}";
         }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            if (_selectedDishes.Count > 0) 
+            { 
+                MessageBox.Show("Заказ успешно оформлен!");
+            }
+        }
     }
 }
